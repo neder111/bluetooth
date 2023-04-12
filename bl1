@@ -1,0 +1,43 @@
+import machine
+import time
+import uos
+import uaudio
+import bluetooth
+ 
+# Pin assignments for ESP32
+MIC_PIN = 34  # Analog pin for the microphone
+ 
+# Set up ADC on the microphone pin
+mic_adc = machine.ADC(machine.Pin(MIC_PIN))
+mic_adc.atten(machine.ADC.ATTN_11DB)  # 0-3.9V range
+ 
+# Set up audio parameters
+SAMPLERATE = 22050  # Sample rate in Hz
+SAMPLES_PER_FRAME = 256  # Number of samples per audio frame
+CHANNELS = 1  # Mono audio
+ 
+# Set up audio recording and streaming
+audio_recorder = uaudio.URecorder(samplerate=SAMPLERATE, channels=CHANNELS, framesize=SAMPLES_PER_FRAME)
+bt_streamer = bluetooth.BluetoothA2DPSink()
+ 
+# Set up loop to continuously record and stream audio
+while True:
+    # Read the raw ADC value from the microphone
+    mic_level = mic_adc.read()
+ 
+    # Check if the mic level is above a threshold
+    if mic_level > 500:
+        # Start recording audio
+        audio_recorder.start()
+ 
+        # Wait for a short amount of time
+        time.sleep_ms(500)
+ 
+        # Stop recording audio
+        audio_recorder.stop()
+ 
+        # Stream the recorded audio to the Bluetooth speaker
+        bt_streamer.write(audio_recorder.get_recorded_frames())
+ 
+    # Wait a short amount of time before reading the mic again
+    time.sleep_ms(10)
